@@ -1,0 +1,12 @@
+{% extends "main/base.html" %}
+
+{% block title %}Healthcare — Needs in Sudan{% endblock %}
+
+{% block content %}
+<div class="text-white" style="margin-top: 150px;">
+    <h3>Healthcare Information</h3>
+    <p>This page shows healthcare and medical needs for people in Sudan, along with the location indicated by them.</p>
+
+    {% include "main/map.html" %}
+</div>
+{% endblock %}

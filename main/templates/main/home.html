@@ -1,0 +1,80 @@
+{% extends "main/base.html" %}
+
+{% block title %}Home — Needs!n Sudan{% endblock %}
+
+{% block content %}
+
+<div style="color: white; margin-top: 20px;">  <!-- increased space from header -->
+
+    <!-- Main sentence broken into 3 lines with bold, larger, shifted text -->
+    <div class="main-sentence">
+        <div class="line line1">Because the right information,</div>
+        <div class="line line2">in time and place,</div>
+        <div class="line line3">makes a huge difference!</div>
+    </div>
+
+    <p>
+        Started with <span class="needsin-logo">
+            Needs<span class="exclamation">!</span><span class="n">n</span>
+        </span>
+        Sudan, an attempt to share Sudan people's needs, who have been facing a disastrous war.<span class="needsin-logo">
+            Needs<span class="exclamation">!</span><span class="n">n</span>
+        </span>
+        (NeedsIn) is a non-profit platform that aims to spread the information about the needs of the people in places that are affected by wars, conflicts, or disasters. 
+        In such circumstances, in addition to their urgent needs, and for various reasons, people also struggle to reach out to those who can help, 
+        and those who can help find it difficult to get updated information. Therefore, emerged the idea for this platform, to help the people in need, 
+        by sharing and spreading the information, whether about healthcare, humanitarian, or energy needs.
+    </p>
+
+</div>
+
+<!-- Styles -->
+<style>
+/* Inline Needs!n logo inside paragraphs */
+.needsin-logo {
+    font-family: 'Pacifico', cursive;
+    font-size: 2rem;        /* slightly larger */
+    color: white;
+}
+
+.needsin-logo .exclamation {
+    font-family: Arial, sans-serif;
+    font-size: 2.3rem;      /* slightly larger red ! */
+    color: #ff3b3b;          
+}
+
+.needsin-logo .n {
+    font-family: 'Pacifico', cursive;
+    font-size: 2rem;
+}
+
+/* Paragraph text slightly larger */
+p {
+    font-size: 1.25rem;  
+    line-height: 1.7;
+}
+
+/* Main sentence styles */
+.main-sentence {
+    margin-bottom: 40px;
+}
+
+.main-sentence .line {
+    font-weight: bold;
+    font-size: 2.2rem;          /* slightly larger */
+}
+
+.main-sentence .line1 {
+    margin-left: 0px;           /* first line aligned left */
+}
+
+.main-sentence .line2 {
+    margin-left: 80px;          /* shifted slightly right */
+}
+
+.main-sentence .line3 {
+    margin-left: 160px;          /* shifted more right */
+}
+</style>
+
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "main/base.html" %}
+
+{% block title %}About — Needs in Sudan{% endblock %}
+
+{% block content %}
+<div style="color: white;">
+    <h3>About</h3>
+    <p>
+        Started with <span class="needsin-logo">
+            Needs<span class="exclamation">!</span><span class="n">n</span>
+        </span>
+        Sudan, an attempt to share Sudan people's needs, who have been facing a disastrous war.<span class="needsin-logo">
+            Needs<span class="exclamation">!</span><span class="n">n</span>
+        </span>
+        (NeedsIn) is a non-profit platform that aims to spread the information about the needs of the people in places that are affected by wars, conflicts, or disasters. 
+        In such circumstances, in addition to their urgent needs, and for various reasons, people also face the difficulty of not being able to reach out to those who can help, 
+        and those who can help find it difficult to get updated information. Therefore, emerged the idea for this platform, to help the people in need, 
+        by sharing and spreading the information, whether about healthcare, humanitarian, or energy needs.
+    </p>
+
+</div>
+
+
+<style>
+.needsin-logo {
+    font-family: 'Pacifico', cursive;
+    font-size: 1.8rem;       
+    color: white;
+}
+
+.needsin-logo .exclamation {
+    font-family: Arial, sans-serif;
+    font-size: 2rem;
+    color: #ff3b3b;          
+}
+
+.needsin-logo .n {
+    font-family: 'Pacifico', cursive;
+    font-size: 1.8rem;
+}
+</style>
+
+{% endblock %}

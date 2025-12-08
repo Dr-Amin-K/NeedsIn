@@ -1,0 +1,141 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Sudan Map</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { height: 90vh; width: 100%; }
+        
+        /* New CSS for the grouped marker (Blue dot with a Plus) */
+        .plus-marker-icon {
+            /* Mimic a default Leaflet marker color */
+            background-color: #3388ff; 
+            border-radius: 50%;
+            width: 25px; 
+            height: 25px; 
+            border: 3px solid white;
+            text-align: center;
+            line-height: 25px; /* Centers the text vertically */
+            color: white; /* Color of the plus sign */
+            font-size: 18px; /* Size of the plus sign */
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Gives it depth */
+        }
+    </style>
+</head>
+<body>
+    <h2>Sudan Leaflet Map</h2>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // Define the default coordinates for comparison
+        const KHARTOUM_LAT = 15.5007;
+        const KHARTOUM_LON = 32.5599;
+        // Define a small tolerance (0.0001 degree is about 11 meters) for grouping near the default location
+        const TOLERANCE = 0.0001; 
+
+        // Initialize the map centered on Khartoum
+        var map = L.map('map').setView([KHARTOUM_LAT, KHARTOUM_LON], 6);
+
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        
+        // Process and Render Posts
+        
+        var posts = JSON.parse('{{ posts_json|default:"[]"|escapejs }}');
+        console.log("DEBUG: Total posts received:", posts.length);
+        
+        var khartoumDefaults = []; 
+        var markerGroup = L.featureGroup().addTo(map);
+
+        if (posts.length > 0) {
+            
+            posts.forEach(function(post) {
+                // FIX 1: Convert coordinates to floating-point numbers
+                var lat = parseFloat(post.lat);
+                var lon = parseFloat(post.lon);
+                
+                // FIX 2: Check if coordinates are within the tolerance of the default location
+                const isDefaultLocation = 
+                    (Math.abs(lat - KHARTOUM_LAT) < TOLERANCE) && 
+                    (Math.abs(lon - KHARTOUM_LON) < TOLERANCE);
+
+                if (isDefaultLocation) {
+                    khartoumDefaults.push(post);
+                    // Skip individual marker creation for default posts
+                    return; 
+                }
+
+                // Logic for posts with **EXTRACTED** locations (that are NOT the default)
+                var popupHTML = `
+                    <b>${post.author}</b> (${post.date || ''})<br>
+                    **Location:** ${post.city}<br>
+                    <p>${post.text.substring(0, 150)}...</p>
+                    <a href="${post.link}" target="_blank">View Post</a>
+                `;
+
+                L.marker([lat, lon]).addTo(markerGroup)
+                    .bindPopup(popupHTML);
+            });
+            
+            
+            // Handle the Combined Marker for Default Posts
+            
+            if (khartoumDefaults.length > 0) {
+                console.log(`DEBUG: Grouping ${khartoumDefaults.length} posts at Khartoum (within tolerance).`);
+                
+                var combinedPopupHTML = `
+                    <h3> Posts in Khartoum / Unknown Location</h3>
+                    <p>Total posts grouped here: <b>${khartoumDefaults.length}</b></p>
+                    <ul style="max-height: 200px; overflow-y: scroll; padding-right: 15px; list-style-type: disc;">
+                `;
+
+                khartoumDefaults.forEach(function(post) {
+                    combinedPopupHTML += `
+                        <li style="margin-bottom: 10px;">
+                            <p style="margin: 0; font-weight: bold;">
+                                ${post.author} (${post.date || 'No Date'}):
+                            </p>
+                            <p style="margin-top: 5px;">
+                                ${post.text.substring(0, 100)}... 
+                                <a href="${post.link}" target="_blank">View Post</a>
+                            </p>
+                        </li>
+                    `;
+                });
+                
+                combinedPopupHTML += '</ul>';
+
+                // Place ONE custom marker (blue circle with plus sign) for all defaulted posts
+                L.marker([KHARTOUM_LAT, KHARTOUM_LON], {
+                    icon: L.divIcon({
+                        className: 'custom-div-icon',
+                        html: `<div class="plus-marker-icon" title="Grouped Location: ${khartoumDefaults.length} Posts">+</div>`,
+                        iconSize: [31, 31],
+                        iconAnchor: [15, 15] 
+                    })
+                })
+                .addTo(markerGroup)
+                .bindPopup(combinedPopupHTML);
+            }
+
+        } else {
+            console.log("DEBUG: No posts found in the database.");
+            L.marker([KHARTOUM_LAT, KHARTOUM_LON]).addTo(map)
+                .bindPopup("No posts found in the database.").openPopup();
+        }
+
+    </script>
+</body>
+</html>
