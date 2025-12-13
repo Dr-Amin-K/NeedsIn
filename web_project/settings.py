@@ -15,18 +15,13 @@ from pathlib import Path
 from dotenv import load_dotenv
 import dj_database_url
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-
-load_dotenv(BASE_DIR / ".env")
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-
 #for future portability): for the settings.py to work both locally and with PostgreSQL later
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Default to SQLite locally
 DATABASES = {
     "default": dj_database_url.config(
-        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=600,
-        ssl_require=True
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",  # Local fallback
     )
 }
 
