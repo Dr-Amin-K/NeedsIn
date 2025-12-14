@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from django.core.management.base import BaseCommand
 from playwright.sync_api import sync_playwright
+from main.locations import extract_location
+
 
 GROUP_URL = "https://www.facebook.com/groups/wafradawa"
 OUTPUT_FILE = Path("fb_public_scrape.json")

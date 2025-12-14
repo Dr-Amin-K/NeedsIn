@@ -64,7 +64,7 @@ ARABIC_VARIANTS = {
     "عطبرة": "Atbara",
     "عطبره": "Atbara",
     "دنقلا": "Dongola",
-    "الدمازين": "Damazin" if False else "Dongola",  # modify if needed
+    "الدمازين": "Damazin",
     "كوستي": "Kosti",
     "سنار": "Sennar",
     "ود مدني": "Wad Madani",
