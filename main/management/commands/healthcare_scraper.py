@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from django.core.management.base import BaseCommand
 from playwright.sync_api import sync_playwright
-from main.locations import extract_location
+from main.utils.locations import extract_location
 
 
 GROUP_URL = "https://www.facebook.com/groups/wafradawa"
@@ -18,16 +18,11 @@ MAX_SCROLLS = 40
 def norm(s: str) -> str:
     if not s:
         return ""
-    # Remove various FB hidden formatting chars
     s = re.sub(r'[\u00A0\u202F\u2007\u2009\u200E\u200F\u202A-\u202E]+', ' ', s)
     return s.strip()
 
-
-# Parse date (YYYY-MM-DD)
-
+# Parse Facebook post date
 MONTH_NAME_RE = r'(?:January|February|March|April|May|June|July|August|September|October|November|December)'
-
-# Ensure this variable is defined globally, before parse_fb_date
 FULL_DATE_RE = re.compile(
     rf'({MONTH_NAME_RE})\s+(\d{{1,2}})\s*(?:at\s*(\d{{1,2}}:\d{{2}}\s*(?:AM|PM)))?', 
     re.IGNORECASE
@@ -38,57 +33,30 @@ def parse_fb_date(raw: str, now=None):
         return None
     if now is None:
         now = datetime.now()
-
-    s = norm(raw).replace(',', '') # Clean up commas
-
-    # Explicit Date: "e.g. November 7 at 6:24 PM" or "November 7"
+    s = norm(raw).replace(',', '')
     m = FULL_DATE_RE.search(s)
     if m:
         month_name = m.group(1)
         day = m.group(2)
-        
-        # Build the full date string for parsing
-        date_str = f"{month_name} {day}"
-        date_format = "%B %d"
-        
-        # Add the year component if available
-        date_str += f" {now.year}"
-        date_format += " %Y"
-
+        date_str = f"{month_name} {day} {now.year}"
         try:
-            candidate = datetime.strptime(date_str, date_format)
-
-            # Year rollover fix: If the parsed date is far in the future, assume last year
+            candidate = datetime.strptime(date_str, "%B %d %Y")
             if candidate.date() > now.date() and (candidate - now).days > 7:
                 candidate = candidate.replace(year=now.year - 1)
-
             return candidate.date().isoformat()
         except ValueError:
-            # Failed to parse the constructed string
             pass
-
     s_lower = s.lower()
-
-    # days ago
-    m = re.search(r'(\d+)\s*(?:d|day|days)\b', s_lower)
-    if m:
-        return (now - timedelta(days=int(m.group(1)))).date().isoformat()
-
-    # hours
-    m = re.search(r'(\d+)\s*(?:h|hr|hour|hours)\b', s_lower)
-    if m:
-        return (now - timedelta(hours=int(m.group(1)))).date().isoformat()
-
-    # minutes
-    m = re.search(r'(\d+)\s*(?:m|min|minute|minutes)\b', s_lower)
-    if m:
-        return (now - timedelta(minutes=int(m.group(1)))).date().isoformat()
-
+    for regex, delta in [(r'(\d+)\s*(?:d|day|days)\b', 'days'),
+                         (r'(\d+)\s*(?:h|hr|hour|hours)\b', 'hours'),
+                         (r'(\d+)\s*(?:m|min|minute|minutes)\b', 'minutes')]:
+        m = re.search(regex, s_lower)
+        if m:
+            kwargs = {delta: int(m.group(1))}
+            return (now - timedelta(**kwargs)).date().isoformat()
     return None
 
-
 # Close login popups
-
 def close_login_popup(page):
     selectors = [
         'div[aria-label="Close"]',
@@ -111,37 +79,28 @@ def close_login_popup(page):
         time.sleep(0.2)
     return False
 
-
 # Scroll helper
-
 def scroll(page):
     page.mouse.wheel(0, random.randint(900, 1400))
     time.sleep(random.uniform(1.0, 1.8))
 
-
-# Extract posts (NO screenshots)
-
+# Extract posts (no screenshots)
 def extract_posts(page):
     posts = []
     articles = page.locator('div[role="article"]')
     total = articles.count()
     now = datetime.now()
-
     for i in range(total):
         art = articles.nth(i)
-
         try:
             art.scroll_into_view_if_needed()
             time.sleep(0.3)
         except:
             pass
-
-        # Get text
         try:
             raw_text = norm(art.inner_text())
         except:
             raw_text = ""
-
         # Extract link
         link = None
         try:
@@ -154,54 +113,37 @@ def extract_posts(page):
                     link = href.split("?")[0]
         except:
             pass
-
         # Extract date
         date_val = parse_fb_date(raw_text, now=now)
-
         posts.append({
             "text": raw_text,
             "date": date_val,
             "link": link,
         })
-
     return posts
 
-
-
-
-#  DATABASE PARSER
-
+# Parse author and body
 def extract_author_text(full_text: str):
     lines = full_text.split("\n")
     author = lines[0].strip() if lines else ""
-
-    # Locate the "·" separator
     body_start = None
     for i, line in enumerate(lines):
         if "·" in line:
             body_start = i + 1
             break
-
     if body_start is None:
         return author, ""
-
-    # collect body until Like / All reactions / Comment / Share
     stop_words = ["Like", "All reactions", "Comment", "Share"]
     body_lines = []
     for line in lines[body_start:]:
         if any(sw in line for sw in stop_words):
             break
         body_lines.append(line)
-
     return author, "\n".join(body_lines).strip()
 
-
-
-
-# Django command
-
+# Django management command
 class Command(BaseCommand):
-    help = "Facebook group scraper. Extracts text + date + link."
+    help = "Facebook group scraper. Extracts text + date + link + city + group."
 
     def handle(self, *args, **kwargs):
         with sync_playwright() as p:
@@ -242,17 +184,13 @@ class Command(BaseCommand):
             # Dedupe + remove empties
             cleaned = []
             seen_links = set()
-
             for p in all_posts:
                 if not p["text"].strip() and not p["link"]:
                     continue
-
                 if p["link"] and p["link"] in seen_links:
                     continue
-
                 if p["link"]:
                     seen_links.add(p["link"])
-
                 cleaned.append(p)
 
             OUTPUT_FILE.write_text(
@@ -260,36 +198,46 @@ class Command(BaseCommand):
                 encoding="utf-8"
             )
 
-            
             # DATABASE SAVE
-            
             conn = sqlite3.connect("scraped_posts.db")
             cur = conn.cursor()
 
+            # Add new columns: group_name, city
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS posts (
                     author TEXT,
                     text TEXT,
                     date TEXT,
-                    link TEXT UNIQUE
+                    link TEXT UNIQUE,
+                    group_name TEXT,
+                    city TEXT
                 )
             """)
 
             for post in cleaned:
                 author, textbody = extract_author_text(post["text"])
+                group_name = GROUP_URL.rstrip("/").split("/")[-1]  # e.g., 'wafradawa'
+
+                # Extract city
+                result = extract_location(post["text"])
+                if result:
+                    city_name, _ = result
+                else:
+                    city_name = "Khartoum"
 
                 cur.execute("""
-                    INSERT INTO posts (author, text, date, link)
-                    VALUES (?, ?, ?, ?)
+                    INSERT INTO posts (author, text, date, link, group_name, city)
+                    VALUES (?, ?, ?, ?, ?, ?)
                     ON CONFLICT(link) DO UPDATE SET
                         author=excluded.author,
                         text=excluded.text,
-                        date=excluded.date
-                """, (author, textbody, post["date"], post["link"]))
+                        date=excluded.date,
+                        group_name=excluded.group_name,
+                        city=excluded.city
+                """, (author, textbody, post["date"], post["link"], group_name, city_name))
 
             conn.commit()
             conn.close()
-            
 
             browser.close()
             print(f"Saved → {OUTPUT_FILE}")

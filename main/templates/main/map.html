@@ -1,141 +1,166 @@
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Sudan Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #map { 
+        height: 75vh; 
+        width: 100%; 
+        border-radius: 12px; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        background: #f8f9fa;
+    }
+    
+    /* FIX: Customizing the popup container to handle internal scrolling better */
+    .leaflet-popup-content-wrapper {
+        padding: 5px;
+        border-radius: 8px;
+    }
 
-    <style>
-        body { margin: 0; padding: 0; }
-        #map { height: 90vh; width: 100%; }
-        
-        /* New CSS for the grouped marker (Blue dot with a Plus) */
-        .plus-marker-icon {
-            /* Mimic a default Leaflet marker color */
-            background-color: #3388ff; 
-            border-radius: 50%;
-            width: 25px; 
-            height: 25px; 
-            border: 3px solid white;
-            text-align: center;
-            line-height: 25px; /* Centers the text vertically */
-            color: white; /* Color of the plus sign */
-            font-size: 18px; /* Size of the plus sign */
-            font-weight: bold;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Gives it depth */
+    .leaflet-popup-content {
+        margin: 10px;
+        width: 260px !important; /* Set a consistent width */
+    }
+
+    .plus-marker-icon {
+        background-color: #3388ff; 
+        border-radius: 50%;
+        width: 28px; height: 28px; 
+        border: 3px solid white;
+        text-align: center;
+        line-height: 28px;
+        color: white; font-size: 20px; font-weight: bold;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Scrollable list styling */
+    .popup-list { 
+        max-height: 220px; /* Limits height to keep the header visible */
+        overflow-y: auto; 
+        list-style: none; 
+        padding: 0; 
+        margin: 5px 0 0 0; 
+        border-top: 1px solid #eee;
+    }
+    
+    .popup-item { border-bottom: 1px solid #eee; padding: 10px 0; color: #333; }
+    .popup-item:last-child { border-bottom: none; }
+</style>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    const SUDAN_CENTER = [15.5, 30.0]; 
+    const outerBounds = [[3.0, 18.0], [24.0, 42.0]];
+
+    const map = L.map('map', {
+        center: SUDAN_CENTER,
+        zoom: 5,
+        minZoom: 4,
+        maxBounds: outerBounds,
+        maxBoundsViscosity: 1.0
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    const markerGroup = L.featureGroup().addTo(map);
+
+    // Common Popup Options to fix the "cropping" issue
+    const customPopupOptions = {
+        maxWidth: 300,
+        autoPan: true,
+        autoPanPadding: L.point(50, 50), // Ensures 50px of space between popup and map edge
+        keepInView: true,                // Keeps the popup in view if the user drags the map
+        className: 'custom-popup'
+    };
+
+    async function loadPosts() {
+        try {
+            const response = await fetch("/api/healthcare-posts/");
+            const allPosts = await response.json();
+            const filterEl = document.getElementById('timeFilter');
+            const selectedLimit = filterEl ? filterEl.value : 'all';
+            const filteredPosts = filterByTime(allPosts, selectedLimit);
+            markerGroup.clearLayers();
+            renderMarkers(filteredPosts);
+        } catch (error) {
+            console.error("Map Error:", error);
         }
-    </style>
-</head>
-<body>
-    <h2>Sudan Leaflet Map</h2>
-    <div id="map"></div>
+    }
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    function filterByTime(posts, limit) {
+        if (limit === 'all') return posts;
+        const now = new Date();
+        return posts.filter(post => {
+            if (!post.date) return false;
+            const postDate = new Date(post.date);
+            const diffDays = (now - postDate) / (1000 * 3600 * 24);
+            if (limit === 'day') return diffDays <= 1;
+            if (limit === 'week') return diffDays <= 7;
+            if (limit === 'month') return diffDays <= 30;
+            if (limit === 'year') return diffDays <= 365;
+            return true;
+        });
+    }
 
-    <script>
-        // Define the default coordinates for comparison
-        const KHARTOUM_LAT = 15.5007;
-        const KHARTOUM_LON = 32.5599;
-        // Define a small tolerance (0.0001 degree is about 11 meters) for grouping near the default location
-        const TOLERANCE = 0.0001; 
+    function renderMarkers(posts) {
+        const cityGroups = {};
+        posts.forEach(post => {
+            const cityName = post.city || "Khartoum / Unknown Location";
+            if (!cityGroups[cityName]) cityGroups[cityName] = [];
+            cityGroups[cityName].push(post);
+        });
 
-        // Initialize the map centered on Khartoum
-        var map = L.map('map').setView([KHARTOUM_LAT, KHARTOUM_LON], 6);
+        for (const [cityName, group] of Object.entries(cityGroups)) {
+            const lat = parseFloat(group[0].lat);
+            const lon = parseFloat(group[0].lon);
+            const popupHTML = generatePopupHTML(group, cityName);
 
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 18,
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-
-        
-        // Process and Render Posts
-        
-        var posts = JSON.parse('{{ posts_json|default:"[]"|escapejs }}');
-        console.log("DEBUG: Total posts received:", posts.length);
-        
-        var khartoumDefaults = []; 
-        var markerGroup = L.featureGroup().addTo(map);
-
-        if (posts.length > 0) {
-            
-            posts.forEach(function(post) {
-                // FIX 1: Convert coordinates to floating-point numbers
-                var lat = parseFloat(post.lat);
-                var lon = parseFloat(post.lon);
-                
-                // FIX 2: Check if coordinates are within the tolerance of the default location
-                const isDefaultLocation = 
-                    (Math.abs(lat - KHARTOUM_LAT) < TOLERANCE) && 
-                    (Math.abs(lon - KHARTOUM_LON) < TOLERANCE);
-
-                if (isDefaultLocation) {
-                    khartoumDefaults.push(post);
-                    // Skip individual marker creation for default posts
-                    return; 
-                }
-
-                // Logic for posts with **EXTRACTED** locations (that are NOT the default)
-                var popupHTML = `
-                    <b>${post.author}</b> (${post.date || ''})<br>
-                    **Location:** ${post.city}<br>
-                    <p>${post.text.substring(0, 150)}...</p>
-                    <a href="${post.link}" target="_blank">View Post</a>
-                `;
-
-                L.marker([lat, lon]).addTo(markerGroup)
-                    .bindPopup(popupHTML);
-            });
-            
-            
-            // Handle the Combined Marker for Default Posts
-            
-            if (khartoumDefaults.length > 0) {
-                console.log(`DEBUG: Grouping ${khartoumDefaults.length} posts at Khartoum (within tolerance).`);
-                
-                var combinedPopupHTML = `
-                    <h3> Posts in Khartoum / Unknown Location</h3>
-                    <p>Total posts grouped here: <b>${khartoumDefaults.length}</b></p>
-                    <ul style="max-height: 200px; overflow-y: scroll; padding-right: 15px; list-style-type: disc;">
-                `;
-
-                khartoumDefaults.forEach(function(post) {
-                    combinedPopupHTML += `
-                        <li style="margin-bottom: 10px;">
-                            <p style="margin: 0; font-weight: bold;">
-                                ${post.author} (${post.date || 'No Date'}):
-                            </p>
-                            <p style="margin-top: 5px;">
-                                ${post.text.substring(0, 100)}... 
-                                <a href="${post.link}" target="_blank">View Post</a>
-                            </p>
-                        </li>
-                    `;
-                });
-                
-                combinedPopupHTML += '</ul>';
-
-                // Place ONE custom marker (blue circle with plus sign) for all defaulted posts
-                L.marker([KHARTOUM_LAT, KHARTOUM_LON], {
+            let marker;
+            if (cityName.includes("Unknown") || cityName.includes("Khartoum")) {
+                marker = L.marker([lat, lon], {
                     icon: L.divIcon({
                         className: 'custom-div-icon',
-                        html: `<div class="plus-marker-icon" title="Grouped Location: ${khartoumDefaults.length} Posts">+</div>`,
-                        iconSize: [31, 31],
-                        iconAnchor: [15, 15] 
+                        html: `<div class="plus-marker-icon">+</div>`,
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 16] 
                     })
-                })
-                .addTo(markerGroup)
-                .bindPopup(combinedPopupHTML);
+                });
+            } else {
+                marker = L.marker([lat, lon]);
             }
-
-        } else {
-            console.log("DEBUG: No posts found in the database.");
-            L.marker([KHARTOUM_LAT, KHARTOUM_LON]).addTo(map)
-                .bindPopup("No posts found in the database.").openPopup();
+            
+            // Attach popup with the fixed options
+            marker.addTo(markerGroup).bindPopup(popupHTML, customPopupOptions);
         }
+    }
 
-    </script>
-</body>
-</html>
+    function generatePopupHTML(posts, cityName) {
+        let displayTitle = (cityName.includes("Khartoum") || cityName.includes("Unknown")) 
+                           ? "Khartoum / Unknown Location" : cityName;
+        
+        let html = `<div>`;
+        html += `<h3 style="margin:0 0 2px 0; color:#333; font-size:1rem;">${displayTitle}</h3>`;
+        html += `<p style="margin:0 0 8px 0; font-size:0.8rem; color:#666;">Total Reports: <b>${posts.length}</b></p>`;
+        html += `<ul class="popup-list">`;
+        posts.forEach(post => {
+            html += `
+            <li class="popup-item">
+                <div style="font-size:0.7rem; color:#888; font-weight:bold; text-transform:lowercase;">group: ${post.group_name}</div>
+                <b style="font-size:0.8rem;">${post.author}</b> <small style="color:#888;">(${post.date || ''})</small>
+                <p style="margin:5px 0; font-size:0.85rem; line-height:1.3;">${post.text.substring(0, 120)}...</p>
+                <a href="${post.link}" target="_blank" style="font-size:0.8rem; font-weight:bold; color:#3388ff; text-decoration:none;">View Post →</a>
+            </li>`;
+        });
+        html += `</ul></div>`;
+        return html;
+    }
+
+    const filterEl = document.getElementById('timeFilter');
+    if (filterEl) { filterEl.addEventListener('change', loadPosts); }
+    loadPosts();
+    setInterval(loadPosts, 60000); 
+</script>
