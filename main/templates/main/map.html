@@ -6,44 +6,19 @@
         height: 75vh; 
         width: 100%; 
         border-radius: 12px; 
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        background: #f8f9fa;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        background: #f0f2f5; 
     }
     
-    /* FIX: Customizing the popup container to handle internal scrolling better */
-    .leaflet-popup-content-wrapper {
-        padding: 5px;
-        border-radius: 8px;
-    }
-
-    .leaflet-popup-content {
-        margin: 10px;
-        width: 260px !important; /* Set a consistent width */
-    }
-
     .plus-marker-icon {
-        background-color: #3388ff; 
-        border-radius: 50%;
-        width: 28px; height: 28px; 
-        border: 3px solid white;
-        text-align: center;
-        line-height: 28px;
-        color: white; font-size: 20px; font-weight: bold;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        background-color: #3388ff; border-radius: 50%;
+        width: 28px; height: 28px; border: 3px solid white;
+        text-align: center; line-height: 28px; color: white; 
+        font-size: 20px; font-weight: bold; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
     }
 
-    /* Scrollable list styling */
-    .popup-list { 
-        max-height: 220px; /* Limits height to keep the header visible */
-        overflow-y: auto; 
-        list-style: none; 
-        padding: 0; 
-        margin: 5px 0 0 0; 
-        border-top: 1px solid #eee;
-    }
-    
-    .popup-item { border-bottom: 1px solid #eee; padding: 10px 0; color: #333; }
-    .popup-item:last-child { border-bottom: none; }
+    .popup-list { max-height: 220px; overflow-y: auto; list-style: none; padding: 0; margin-top: 5px; border-top: 1px solid #eee; }
+    .popup-item { border-bottom: 1px solid #f0f0f0; padding: 10px 0; color: #333; }
 </style>
 
 <div id="map"></div>
@@ -51,31 +26,40 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    const SUDAN_CENTER = [15.5, 30.0]; 
-    const outerBounds = [[3.0, 18.0], [24.0, 42.0]];
+    // 1. EXPANDED VERTICAL VIEW
+    // Original South was 8.5, North was 22.5. 
+    // New South is 3.5 (shows more of South Sudan/East Africa border)
+    // New North is 24.5 (shows more of the Egyptian border/Red Sea)
+    const SUDAN_CENTER = [15.8, 30.2]; 
+    const expandedBounds = [[3.5, 21.5], [24.5, 39.0]];
 
     const map = L.map('map', {
         center: SUDAN_CENTER,
-        zoom: 5,
+        zoom: 5,               // Slightly zoomed out to accommodate the larger vertical area
         minZoom: 4,
-        maxBounds: outerBounds,
+        maxBounds: expandedBounds,
         maxBoundsViscosity: 1.0
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         attribution: '© OpenStreetMap contributors'
     }).addTo(map);
 
-    const markerGroup = L.featureGroup().addTo(map);
+    // 2. Fetch Border Overlay
+    fetch('https://raw.githubusercontent.com/datasets/geo-boundaries-world-110m/master/countries/SDN.geojson')
+        .then(res => res.json())
+        .then(data => {
+            L.geoJSON(data, {
+                style: {
+                    color: "#3388ff",
+                    weight: 2,          
+                    fillColor: "#3388ff", 
+                    fillOpacity: 0.05
+                }
+            }).addTo(map);
+        });
 
-    // Common Popup Options to fix the "cropping" issue
-    const customPopupOptions = {
-        maxWidth: 300,
-        autoPan: true,
-        autoPanPadding: L.point(50, 50), // Ensures 50px of space between popup and map edge
-        keepInView: true,                // Keeps the popup in view if the user drags the map
-        className: 'custom-popup'
-    };
+    const markerGroup = L.featureGroup().addTo(map);
 
     async function loadPosts() {
         try {
@@ -119,44 +103,37 @@
             const lon = parseFloat(group[0].lon);
             const popupHTML = generatePopupHTML(group, cityName);
 
-            let marker;
-            if (cityName.includes("Unknown") || cityName.includes("Khartoum")) {
-                marker = L.marker([lat, lon], {
-                    icon: L.divIcon({
-                        className: 'custom-div-icon',
-                        html: `<div class="plus-marker-icon">+</div>`,
-                        iconSize: [32, 32],
-                        iconAnchor: [16, 16] 
-                    })
-                });
-            } else {
-                marker = L.marker([lat, lon]);
-            }
+            const isUnknown = cityName.includes("Unknown") || cityName.includes("Khartoum");
+            const marker = L.marker([lat, lon], {
+                icon: isUnknown ? L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div class="plus-marker-icon">+</div>`,
+                    iconSize: [32, 32], iconAnchor: [16, 16]
+                }) : new L.Icon.Default()
+            });
             
-            // Attach popup with the fixed options
-            marker.addTo(markerGroup).bindPopup(popupHTML, customPopupOptions);
+            marker.addTo(markerGroup).bindPopup(popupHTML, {
+                maxWidth: 300, autoPan: true, autoPanPadding: L.point(50, 80), keepInView: true
+            });
         }
     }
 
     function generatePopupHTML(posts, cityName) {
-        let displayTitle = (cityName.includes("Khartoum") || cityName.includes("Unknown")) 
+        const displayTitle = (cityName.includes("Khartoum") || cityName.includes("Unknown")) 
                            ? "Khartoum / Unknown Location" : cityName;
         
-        let html = `<div>`;
-        html += `<h3 style="margin:0 0 2px 0; color:#333; font-size:1rem;">${displayTitle}</h3>`;
-        html += `<p style="margin:0 0 8px 0; font-size:0.8rem; color:#666;">Total Reports: <b>${posts.length}</b></p>`;
+        let html = `<div><h3 style="margin:0; font-size:1rem; color:#2c3e50;">${displayTitle}</h3>`;
+        html += `<p style="margin:2px 0 8px 0; font-size:0.8rem; color:#7f8c8d;">Reports: <b>${posts.length}</b></p>`;
         html += `<ul class="popup-list">`;
         posts.forEach(post => {
-            html += `
-            <li class="popup-item">
-                <div style="font-size:0.7rem; color:#888; font-weight:bold; text-transform:lowercase;">group: ${post.group_name}</div>
-                <b style="font-size:0.8rem;">${post.author}</b> <small style="color:#888;">(${post.date || ''})</small>
-                <p style="margin:5px 0; font-size:0.85rem; line-height:1.3;">${post.text.substring(0, 120)}...</p>
-                <a href="${post.link}" target="_blank" style="font-size:0.8rem; font-weight:bold; color:#3388ff; text-decoration:none;">View Post →</a>
+            html += `<li class="popup-item">
+                <div style="font-size:0.7rem; color:#888; font-weight:bold;">group: ${post.group_name}</div>
+                <b style="font-size:0.9rem;">${post.author}</b> <small style="color:#95a5a6;">(${post.date || ''})</small>
+                <p style="margin:5px 0; font-size:0.85rem; color:#34495e;">${post.text.substring(0, 100)}...</p>
+                <a href="${post.link}" target="_blank" style="font-size:0.8rem; font-weight:bold; color:#3498db; text-decoration:none;">View Post →</a>
             </li>`;
         });
-        html += `</ul></div>`;
-        return html;
+        return html + `</ul></div>`;
     }
 
     const filterEl = document.getElementById('timeFilter');
