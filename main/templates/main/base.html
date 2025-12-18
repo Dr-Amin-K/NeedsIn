@@ -11,7 +11,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
-
         html, body {
             height: 100%;
             margin: 0;
@@ -21,117 +20,125 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
-
             background-image: url("{% static 'main/images/background.jpg' %}");
             background-size: cover;
             background-repeat: no-repeat;
             background-position: center center;
             background-attachment: fixed;
+            /* Space for the fixed header */
+            padding-top: 110px; 
+            font-family: 'Poppins', sans-serif;
+        }
 
-            padding-top: 120px;
-        
+        /* Responsive padding for smaller headers on mobile */
+        @media (max-width: 991px) {
+            body { padding-top: 140px; }
         }
         @media (max-width: 768px) {
-            body {
-                padding-top: 90px;
-                }
-            }
+            body { padding-top: 100px; }
+        }
 
         .container {
-            flex: 1 0 auto;   /* Main content grows */
+            flex: 1 0 auto;
         }
 
-        footer {
-            text-align: center;
+        /* Fixed header configuration */
+        .fixed-header {
+            z-index: 1030; 
+            background: rgba(0, 0, 0, 0.9); 
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            padding: 5px 0;
         }
 
-        @media (max-width: 576px) {
-            footer .d-flex {
-            flex-direction: column;
-            gap: 10px;
-            }
-        }
-
-
-        /* Logo styles */
+        /* Logo responsiveness */
         .logo { 
             font-family: 'Pacifico', cursive; 
-            font-size: 3rem; 
+            font-size: 2.5rem; 
             color: white; 
             margin: 0; 
-            padding-left: 15px; 
+            text-decoration: none;
         }
         .logo .exclamation { 
             font-family: 'Arial'; 
-            font-size: 4rem; 
+            font-size: 3.2rem; 
             color: #ff3b3b; 
         }
         .logo .sudan { 
-            font-family: 'Arial', cursive; 
-            font-size: 3rem; 
+            font-family: 'Arial', sans-serif; 
+            font-size: 2.5rem; 
             color: white; 
+            font-weight: bold;
         }
 
-        /* Fixed header */
-        .fixed-header {
-            z-index: 1030; 
-            background: rgba(0, 0, 0, 0.85); 
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
-            padding: 10px 0; 
+        @media (max-width: 768px) {
+            .logo { font-size: 1.8rem; }
+            .logo .exclamation { font-size: 2.2rem; }
+            .logo .sudan { font-size: 1.8rem; }
         }
 
-        /* Navigation */
+        /* Navigation Tabs - Mobile Scrollable */
         .nav-tabs {
-            border-bottom: none; 
-            margin-right: 15px; 
+            border-bottom: none;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
         
         .nav-tabs .nav-link { 
             font-weight: 600; 
             color: white; 
             border: none;
+            white-space: nowrap;
             background-color: transparent; 
-            transition: background-color 0.3s ease;
-            margin: 0 5px;
+            transition: all 0.3s ease;
+            margin: 0 2px;
             border-radius: 8px;
+            font-size: 0.9rem;
         }
         
         .nav-tabs .nav-link:hover,
         .nav-tabs .nav-link.active { 
-            background-color: rgba(255, 255, 255, 0.2); 
+            background-color: rgba(255, 255, 255, 0.2) !important; 
+            color: #ff3b3b !important;
         }
 
-        .banner { background: rgba(0, 0, 0, 0.45); padding: 60px 20px; border-radius: 12px; }
-
-        /* Footer styles */
+        /* Footer visibility and spacing */
         footer { 
-            padding: 25px 10px; 
-            background: rgba(0, 0, 0, 0.65); 
+            padding: 20px 0; 
+            background: rgba(0, 0, 0, 0.8); 
             color: white; 
-            border-top: 2px solid rgba(255,255,255,0.2); 
+            border-top: 2px solid rgba(255,255,255,0.1); 
+            font-size: 0.85rem;
         }
+        
         .footer-link-icon {
             color: white;
-            font-size: 1.5rem;
-            margin-left: 10px;
+            font-size: 1.4rem;
+            margin-left: 15px;
             transition: color 0.2s ease;
         }
-        .footer-link-icon:hover {
-            color: #ff3b3b;
+        .footer-link-icon:hover { color: #ff3b3b; }
+
+        @media (max-width: 576px) {
+            footer .d-flex {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
         }
     </style>
 </head>
 <body>
 
     <div class="fixed-top fixed-header">
-        <div class="container-fluid d-flex justify-content-between align-items-center">
+        <div class="container-fluid d-flex flex-column flex-lg-row justify-content-between align-items-center px-4">
             <header>
-                <h1 class="logo">
+                <a href="{% url 'home' %}" class="logo">
                     Needs<span class="exclamation">!</span>n <span class="sudan">Sudan</span>
-                </h1>
+                </a>
             </header>
 
-            <nav>
+            <nav class="mt-2 mt-lg-0">
                 <ul class="nav nav-tabs">
                     <li class="nav-item"><a class="nav-link" href="{% url 'home' %}">Home</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'healthcare' %}">Healthcare</a></li>
@@ -143,24 +150,28 @@
         </div>
     </div>
 
-    <div class="container">
+    <main class="container">
         {% block content %}
         {% endblock %}
-    </div>
+    </main>
 
     <footer>
         <div class="container">
             <div class="d-flex justify-content-between align-items-center">
-                <span class="mb-0 me-2 d-none d-sm-inline">© All Rights Reserved</span>
+                <div class="mb-0">
+                    <span class="d-block d-sm-inline">© All Rights Reserved</span>
+                    <span class="mx-1 d-none d-sm-inline">|</span>
+                    <span class="d-block d-sm-inline">Needs!n Project</span>
+                </div>
 
                 <div class="d-flex align-items-center">
-                    <span class="me-2 d-none d-sm-inline">Made by Dr. Amin Kamal (MIT Emerging Talent)</span>
+                    <span class="me-2 d-none d-md-inline">By Dr. Amin Kamal (MIT Emerging Talent)</span>
                     
-                    <a href="https://www.linkedin.com/in/dr-amin-k/" target="_blank" class="footer-link-icon">
+                    <a href="https://www.linkedin.com/in/dr-amin-k/" target="_blank" class="footer-link-icon" aria-label="LinkedIn">
                         <i class="fab fa-linkedin"></i>
                     </a>
                     
-                    <a href="https://github.com/Dr-Amin-K" target="_blank" class="footer-link-icon">
+                    <a href="https://github.com/Dr-Amin-K" target="_blank" class="footer-link-icon" aria-label="GitHub">
                         <i class="fab fa-github"></i>
                     </a>
                 </div>
@@ -168,5 +179,6 @@
         </div>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

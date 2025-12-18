@@ -1,23 +1,20 @@
 {% extends "main/base.html" %}
 
-{% block title %}Home — Needs!n Sudan{% endblock %}
+{% block title %}Home | Needs!n{% endblock %}
 
 {% block content %}
 
-<div style="color: white; margin-top: 20px;">  <!-- increased space from header -->
-
-    <!-- Main sentence broken into 3 lines with bold, larger, shifted text -->
-    <div class="main-sentence">
+<div style="color: white; margin-top: 20px;">  <div class="main-sentence">
         <div class="line line1">Because the right information,</div>
         <div class="line line2">in time and place,</div>
         <div class="line line3">makes a huge difference!</div>
     </div>
 
-    <p>
+    <p class="justified-text">
         Started with <span class="needsin-logo">
             Needs<span class="exclamation">!</span><span class="n">n</span>
         </span>
-        Sudan, an attempt to share Sudan people's needs, who have been facing a disastrous war.<span class="needsin-logo">
+        Sudan, an attempt to share Sudan people's needs, who have been facing a disastrous war. <span class="needsin-logo">
             Needs<span class="exclamation">!</span><span class="n">n</span>
         </span>
         (NeedsIn) is a non-profit platform that aims to spread the information about the needs of the people in places that are affected by wars, conflicts, or disasters. 
@@ -28,18 +25,17 @@
 
 </div>
 
-<!-- Styles -->
 <style>
 /* Inline Needs!n logo inside paragraphs */
 .needsin-logo {
     font-family: 'Pacifico', cursive;
-    font-size: 2rem;        /* slightly larger */
+    font-size: 2rem;
     color: white;
 }
 
 .needsin-logo .exclamation {
     font-family: Arial, sans-serif;
-    font-size: 2.3rem;      /* slightly larger red ! */
+    font-size: 2.3rem;
     color: #ff3b3b;          
 }
 
@@ -48,10 +44,12 @@
     font-size: 2rem;
 }
 
-/* Paragraph text slightly larger */
-p {
+/* Paragraph text slightly larger and JUSTIFIED */
+p.justified-text {
     font-size: 1.25rem;  
     line-height: 1.7;
+    text-align: justify;      /* This makes the edges straight */
+    text-justify: inter-word; /* Improves spacing on mobile/smaller screens */
 }
 
 /* Main sentence styles */
@@ -61,19 +59,29 @@ p {
 
 .main-sentence .line {
     font-weight: bold;
-    font-size: 2.2rem;          /* slightly larger */
+    font-size: 2.2rem;
 }
 
 .main-sentence .line1 {
-    margin-left: 0px;           /* first line aligned left */
+    margin-left: 0px;
 }
 
-.main-sentence .line2 {
-    margin-left: 80px;          /* shifted slightly right */
+/* Responsive shifts: using margins for desktop, removing them for mobile */
+@media (min-width: 768px) {
+    .main-sentence .line2 {
+        margin-left: 80px;
+    }
+
+    .main-sentence .line3 {
+        margin-left: 160px;
+    }
 }
 
-.main-sentence .line3 {
-    margin-left: 160px;          /* shifted more right */
+@media (max-width: 767px) {
+    .main-sentence .line {
+        font-size: 1.6rem; /* Shrink text slightly for mobile screens */
+        text-align: left;
+    }
 }
 </style>
 

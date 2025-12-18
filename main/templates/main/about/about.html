@@ -1,15 +1,15 @@
 {% extends "main/base.html" %}
 
-{% block title %}About — Needs in Sudan{% endblock %}
+{% block title %}About | Needs!n{% endblock %}
 
 {% block content %}
-<div style="color: white;">
-    <h3>About</h3>
-    <p>
+<div style="color: white; padding: 20px 0;">
+    <h3 style="margin-bottom: 20px; font-weight: 600;">About</h3>
+    <p class="about-text">
         Started with <span class="needsin-logo">
             Needs<span class="exclamation">!</span><span class="n">n</span>
         </span>
-        Sudan, an attempt to share Sudan people's needs, who have been facing a disastrous war.<span class="needsin-logo">
+        Sudan, an attempt to share Sudan people's needs, who have been facing a disastrous war. <span class="needsin-logo">
             Needs<span class="exclamation">!</span><span class="n">n</span>
         </span>
         (NeedsIn) is a non-profit platform that aims to spread the information about the needs of the people in places that are affected by wars, conflicts, or disasters. 
@@ -17,15 +17,23 @@
         and those who can help find it difficult to get updated information. Therefore, emerged the idea for this platform, to help the people in need, 
         by sharing and spreading the information, whether about healthcare, humanitarian, or energy needs.
     </p>
-
 </div>
 
-
 <style>
+/* Paragraph Styling: Justified and Responsive */
+.about-text {
+    font-size: 1.25rem;
+    line-height: 1.8;
+    text-align: justify;       /* Straightens the edges */
+    text-justify: inter-word;  /* Optimizes word spacing for justification */
+}
+
+/* Needs!n Logo Styling */
 .needsin-logo {
     font-family: 'Pacifico', cursive;
     font-size: 1.8rem;       
     color: white;
+    display: inline-block; /* Helps prevent logo parts from splitting across lines */
 }
 
 .needsin-logo .exclamation {
@@ -38,6 +46,18 @@
     font-family: 'Pacifico', cursive;
     font-size: 1.8rem;
 }
-</style>
 
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+    .about-text {
+        font-size: 1.1rem; /* Slightly smaller text for better flow on mobile */
+    }
+    .needsin-logo {
+        font-size: 1.5rem;
+    }
+    .needsin-logo .exclamation {
+        font-size: 1.7rem;
+    }
+}
+</style>
 {% endblock %}
