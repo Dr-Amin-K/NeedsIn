@@ -11,7 +11,7 @@
     }
     
     .plus-marker-icon {
-        background-color: #3388ff; border-radius: 50%;
+        background-color: #1a5ebedf; border-radius: 50%;
         width: 28px; height: 28px; border: 3px solid white;
         text-align: center; line-height: 28px; color: white; 
         font-size: 20px; font-weight: bold; box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
@@ -26,30 +26,24 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-    // 1. EXPANDED VERTICAL VIEW
-    // Original South was 8.5, North was 22.5. 
-    // New South is 3.5 (shows more of South Sudan/East Africa border)
-    // New North is 24.5 (shows more of the Egyptian border/Red Sea)
-    const SUDAN_CENTER = [15.8, 30.2]; 
-    const expandedBounds = [[3.5, 21.5], [24.5, 39.0]];
+    const SUDAN_CENTER = [15.5, 30.2]; 
 
     const map = L.map('map', {
         center: SUDAN_CENTER,
-        zoom: 5,               // Slightly zoomed out to accommodate the larger vertical area
-        minZoom: 4,
-        maxBounds: expandedBounds,
-        maxBoundsViscosity: 1.0
+        zoom: 5.5,             
+        zoomSnap: 0.1,
+        scrollWheelZoom: false
     });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap contributors'
+    // CHANGED: Use Voyager tiles for English labels and colorful blue water
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors © CARTO'
     }).addTo(map);
 
-    // 2. Fetch Border Overlay
     fetch('https://raw.githubusercontent.com/datasets/geo-boundaries-world-110m/master/countries/SDN.geojson')
         .then(res => res.json())
         .then(data => {
-            L.geoJSON(data, {
+            const border = L.geoJSON(data, {
                 style: {
                     color: "#3388ff",
                     weight: 2,          
@@ -57,6 +51,9 @@
                     fillOpacity: 0.05
                 }
             }).addTo(map);
+            
+            // Automatically frames the entire Republic of Sudan (North to South)
+            map.fitBounds(border.getBounds(), { padding: [30, 30] });
         });
 
     const markerGroup = L.featureGroup().addTo(map);
@@ -123,7 +120,7 @@
                            ? "Khartoum / Unknown Location" : cityName;
         
         let html = `<div><h3 style="margin:0; font-size:1rem; color:#2c3e50;">${displayTitle}</h3>`;
-        html += `<p style="margin:2px 0 8px 0; font-size:0.8rem; color:#7f8c8d;">Reports: <b>${posts.length}</b></p>`;
+        html += `<p style="margin:2px 0 8px 0; font-size:0.8rem; color:#7f8c8d;">Posts: <b>${posts.length}</b></p>`;
         html += `<ul class="popup-list">`;
         posts.forEach(post => {
             html += `<li class="popup-item">
